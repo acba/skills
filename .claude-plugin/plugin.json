@@ -13,6 +13,7 @@
   ],
   "skills": [
     "./skills/auditoria/criar-matriz-planejamento/",
+    "./skills/auditoria/criar-termos-auditoria/",
     "./skills/auditoria/elaborar-survey-limesurvey/"
   ]
 }
