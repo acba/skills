@@ -1,0 +1,18 @@
+{
+  "name": "skills-auditoria",
+  "displayName": "Skills de Auditoria",
+  "version": "1.0.0",
+  "description": "Skills reutilizáveis para planejamento e coleta em auditorias e fiscalizações.",
+  "author": {
+    "name": "Augusto Almeida"
+  },
+  "keywords": [
+    "auditoria",
+    "fiscalizacao",
+    "governo"
+  ],
+  "skills": [
+    "./skills/auditoria/criar-matriz-planejamento/",
+    "./skills/auditoria/elaborar-survey-limesurvey/"
+  ]
+}

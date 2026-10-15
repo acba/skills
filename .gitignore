@@ -1,0 +1,6 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+
+# Skills installed into this checkout for the local agent harness.
+/.agents/skills/
