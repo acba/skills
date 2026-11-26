@@ -1,220 +1,106 @@
 ---
 name: elaborar-survey-limesurvey
-description: Elabora, revisa, corrige, valida e converte questionários em Markdown SurveyMD para arquivos LSS importáveis no LimeSurvey e guias DOCX legíveis enviados aos respondentes com o link eletrônico. Use sempre que o usuário pedir para criar ou avaliar survey, questionário eletrônico ou formulário de auditoria; editar `.md`; gerar ou validar `.lss`; produzir DOCX/PDF auxiliar de preenchimento; ou conferir escalas de adoção, perguntas condicionais, uploads de evidência, grupos, tokens, clareza, neutralidade, obrigatoriedade, minimização de dados e rastreabilidade. Não use para responder um questionário como participante nem para operar uma instância remota do LimeSurvey sem autorização e credenciais.
-compatibility: Python 3.10 ou superior. LSS usa somente biblioteca padrão; DOCX prefere Pandoc/pypandoc e usa python-docx como fallback; PDF usa LibreOffice Writer no Linux e prioriza Microsoft Word com fallback para LibreOffice no Windows.
+description: Elaborar e publicar o questionário SurveyMD como importação LimeSurvey (.lss) e guia do respondente (DOCX/PDF), além do survey de comentários do gestor e da coleta de respostas e evidências. Use quando o usuário pedir para criar, revisar ou converter um questionário, gerar o LSS, gerar o guia em DOCX/PDF, montar o survey de comentários ou coletar respostas do LimeSurvey. Não use para avaliar evidências nem redigir relatórios.
+metadata:
+  requirements: Argos CLI instalado e um projeto com `fiscalizacao.yml`; credenciais do LimeSurvey apenas em variáveis de ambiente quando houver coleta; LibreOffice ou Microsoft Word apenas quando o PDF for solicitado.
 ---
 
-# Elaborar e avaliar surveys do LimeSurvey
+# Elaborar o survey LimeSurvey
 
-## Objetivo
+## Resultado e limites
 
-Produzir questionários claros, proporcionais e tecnicamente importáveis no LimeSurvey, mantendo o Markdown SurveyMD como fonte canônica. A skill cobre criação, revisão de conteúdo, validação estrutural, geração do LSS e geração do guia DOCX que acompanha o link enviado aos respondentes.
+Entregue o SurveyMD validado, o `.lss` importável e o guia DOCX/PDF do
+respondente (`argos survey gerar`). Quando solicitado, gere também o survey de
+comentários do gestor (`argos contraditorio preparar`) e colete respostas e
+anexos do LimeSurvey (`argos survey coletar` e `argos survey baixar-anexos`). O survey
+coleta declarações e evidências; ele não julga conformidade nem conclui
+achados — isso pertence a `argos evidencias avaliar` e `argos auditar`.
 
-Trate questionários e pareceres produzidos por IA como minutas. A equipe responsável deve aprovar conteúdo, critérios, dados pessoais coletados, lógica condicional e configuração final antes da publicação.
+## Fontes e recursos obrigatórios
 
-## Recursos autocontidos
+1. Leia a matriz de planejamento vigente para manter correspondência entre
+   questões de auditoria, informações requeridas e itens do questionário.
+2. Leia o SurveyMD atual e preserve códigos de questão já respondidos; mudar um
+   código em coleta ativa quebra a rastreabilidade das respostas.
+3. Leia a escala de adoção padrão (`naoad`, `adfor`, `admen`, `adpar`, `admai`,
+   `naoap`) antes de propor novas escalas.
 
-- `scripts/survey_tool.py`: interface para revisar Markdown, gerar LSS/DOCX e validar os produtos;
-- `scripts/surveymd_to_lss.py`: parser e gerador XML do LimeSurvey;
-- `scripts/surveymd_to_docx.py`: renderizador do guia do respondente e conversor DOCX;
-- `scripts/docx_to_pdf.py`: conversor determinístico de DOCX para PDF por LibreOffice no Linux e por Microsoft Word, com fallback para LibreOffice, no Windows;
-- `scripts/survey_utils.py`: front matter, targets e dependências condicionais;
-- `references/surveymd-format.md`: gramática e exemplos do formato-fonte;
-- `references/quality-review.md`: roteiro de avaliação metodológica, auditorial e de privacidade;
-- `assets/survey-template.md`: ponto de partida editável;
-- `assets/template-questionario.docx`: reference DOCX incorporado para o Pandoc;
-- `assets/template-questionario-tcerj.docx`: template institucional versionado do TCE-RJ para o guia DOCX deste projeto;
-- `evals/`: casos de avaliação da própria skill.
+## 1. Gramática SurveyMD
 
-Os scripts não dependem do repositório do usuário, de PyYAML nem de pacotes do LimeSurvey. A geração DOCX segue preferencialmente a abordagem Pandoc com `reference-docx`; se Pandoc não estiver disponível, usa `python-docx` para produzir um documento funcional.
+Antes de criar ou revisar o Markdown, consulte a
+[especificação normativa completa do SurveyMD v1](../../docs/SURVEYMD_V1.md).
+Ela define gramática, metadados, diretivas e aliases aceitos, tipos, condições,
+macros, defaults, limites e exemplos verificados. Use essa referência como fonte
+única para decidir a sintaxe; não invente atributos específicos do LimeSurvey
+no arquivo autoral. Os exemplos executáveis ficam em
+<code>../../docs/surveymd-v1/examples/</code>.
 
-## Fluxo de trabalho
+Forma básica: front matter YAML opcional, escalas em <code>## Escala: &lt;id&gt;</code>, grupos
+em <code>## Grupo: &lt;id&gt; | Nome</code> e questões em <code>### &lt;codigo&gt; [&lt;tipo&gt;]</code>. Alternativas
+usam <code>- codigo | Rótulo</code>; declare diretivas em linhas <code>nome: valor</code> e consulte
+a especificação para compatibilidade por tipo e expansão de macros.
 
-1. Identifique se a solicitação é criação, revisão, correção, validação ou geração do LSS.
-2. Leia as instruções do repositório e o questionário existente antes de alterar qualquer arquivo.
-3. Leia as fontes que sustentam objetivo, população, critérios, riscos, informações requeridas e evidências. Não invente requisitos ou conclusões.
-4. Preserve códigos de grupos, perguntas, alternativas e subquestões existentes. Eles podem estar ligados a exportações, cálculos, evidências e séries históricas.
-5. Use o Markdown como fonte canônica. Não edite o LSS gerado para implementar mudança permanente; corrija o Markdown e gere novamente.
-6. Leia `references/surveymd-format.md` ao criar ou corrigir sintaxe, escalas, lógica condicional, targets, macro `adoption` ou uploads.
-7. Leia `references/quality-review.md` ao elaborar ou avaliar conteúdo.
-8. Execute a revisão automatizada. Corrija erros e examine conscientemente os avisos.
-9. Gere conjuntamente o LSS e o guia DOCX do respondente e valide os dois produtos. Gere o PDF somente quando solicitado.
-10. Confira se o DOCX não expõe diretivas técnicas, apresenta todas as perguntas aplicáveis e deixa claro que o envio ocorre no LimeSurvey.
-11. Informe os arquivos alterados, resultado das validações e decisões que ainda exigem revisão humana.
+## 2. Validar e publicar
 
-Prefira intervenção mínima em questionários existentes. Reescreva somente o necessário para remover ambiguidade, corrigir lógica ou alinhar a pergunta ao objetivo da coleta.
-
-## Elaboração do conteúdo
-
-Antes de escrever perguntas, registre:
-
-- finalidade da coleta e decisões que os dados apoiarão;
-- população respondente e unidade de análise;
-- período de referência;
-- conceitos que precisam ser definidos;
-- dados pessoais estritamente necessários;
-- evidência esperada, quando a resposta precisar de comprovação;
-- regra de análise ou cálculo que consumirá cada código.
-
-Uma pergunta deve medir um conteúdo identificável. Separe enunciados com duas obrigações quando as respostas puderem divergir. Defina termos vagos como “periodicamente”, “adequado” ou “formalizado”. Evite indução, pressupostos não demonstrados e alternativas sobrepostas.
-
-Em questionários de auditoria, diferencie:
-
-- declaração do respondente;
-- detalhamento confirmatório;
-- documento ou registro comprobatório;
-- avaliação posterior da equipe de auditoria.
-
-Não apresente resposta autodeclarada como evidência conclusiva.
-
-## Revisão
-
-Avalie em quatro níveis:
-
-1. **Finalidade e escopo** — cada pergunta contribui para o objetivo e se aplica à população indicada.
-2. **Qualidade da mensuração** — enunciado, período, unidade de análise, alternativas, escalas e instruções são claros e neutros.
-3. **Lógica e rastreabilidade** — códigos são estáveis; obrigatoriedade, `visible_if`, evidências, targets e dependências estão coerentes.
-4. **Privacidade e operação** — há minimização de dados, orientação para anexos, base institucional adequada e plano de teste no LimeSurvey.
-
-Ao concluir uma revisão, classifique observações como:
-
-- `erro`: impede interpretação confiável, conversão ou navegação;
-- `aviso`: exige decisão consciente, mas pode ser aceitável;
-- `melhoria`: aumenta clareza ou eficiência sem corrigir defeito material.
-
-## Formato-fonte
-
-Use `.md` como extensão padrão e UTF-8. Comece a partir de `assets/survey-template.md` quando não houver fonte existente.
-
-O formato aceita questões `single`, `multi`, `short`, `long`, `upload`, `multi_text`, `array`, `array_numbers` e a macro `adoption`. Consulte `references/surveymd-format.md` para a sintaxe completa.
-
-## Comandos
-
-Resolva `<skill-dir>` como o diretório que contém este `SKILL.md`.
-
-Revisar o Markdown:
-
-```bash
-python <skill-dir>/scripts/survey_tool.py review questionario.md
+```text
+argos survey gerar questionario.md --guia
+argos survey gerar questionario.md --output questionario.lss --docx-output guia.docx --pdf
 ```
 
-Obter resultado estruturado:
+O `.lss` sai em `<questionario>.lss` (ou em `--output`); `--guia` gera também o
+guia DOCX (`<questionario>.docx` ou `--docx-output`), e `--pdf` deriva o PDF do
+guia (`--pdf-output` opcional; `--estilos` troca o DOCX de estilos) e exige
+LibreOffice ou Microsoft Word. A ação
+valida a gramática antes de publicar; corrija o Markdown — nunca edite o `.lss`
+ou o DOCX gerados.
 
-```bash
-python <skill-dir>/scripts/survey_tool.py review questionario.md --json
+## 3. Survey de comentários do gestor
+
+```text
+argos contraditorio preparar --resultado-auditoria resultado_auditoria.json \
+  --questionario questionario.md --lss-output comentarios.lss --anexos-output anexos.zip
 ```
 
-Gerar e validar o LSS:
+O survey de comentários nasce do resultado preliminar da auditoria e dos
+ajustes aplicados (`--ajustes`); os anexos DOCX são individuais por auditado e
+usam `--template-anexos` (padrão: `templates.comentarios_gestor` do projeto).
+`--config-comentarios` troca as perguntas e os textos, e `--data-final`,
+`--nome-administrador` e `--email-administrador` preenchem o prazo e o contato.
+Use `--sem-lss` ou `--sem-anexos` para publicar apenas uma das partes.
 
-```bash
-python <skill-dir>/scripts/survey_tool.py build questionario.md questionario.lss
+## 4. Coletar respostas e evidências
+
+```text
+argos survey coletar --survey-id 123456 --output-dir 02-Execucao/01-Coleta/01-Questionario --dry-run
+argos survey coletar --survey-id 123456 --output-dir 02-Execucao/01-Coleta/01-Questionario
 ```
 
-Gerar somente o guia DOCX destinado aos respondentes:
+Para baixar apenas os anexos de um XLSX de respostas já exportado do LimeSurvey:
 
-```bash
-python <skill-dir>/scripts/survey_tool.py build-docx questionario.md questionario.docx
+```text
+argos survey baixar-anexos respostas-exportadas.xlsx --output-dir 02-Execucao/01-Coleta/anexos
 ```
 
-Gerar o pacote recomendado — LSS e DOCX com o mesmo nome-base:
+- `--output-dir` é a pasta de **um** survey; use uma pasta por survey.
+- A coleta cria `exportacoes_brutas/<timestamp>-<execucao>/`, `auditados/` e
+  `manifesto-geral.xlsx`. Os anexos correntes usam nomes fixos:
+  `auditados/<auditado>-r<id>/respostas.pdf` e `evidencias.zip`.
+- `--dry-run` valida a configuração localmente, sem rede; use-o antes de
+  qualquer coleta real.
+- Credenciais do LimeSurvey vêm exclusivamente de variáveis de ambiente;
+  nunca as grave em produtos, logs ou no SQLite.
+- Repetições sem mudança reutilizam os anexos; versões antigas vão para
+  `auditados/.versoes/`. `--refresh` força nova consulta dos anexos.
+- A extração é opcional e desativada por padrão; com `--extract true` ela vai
+  para `derivados/`, nunca para junto do ZIP corrente.
+- `--coluna-auditado` indica a coluna que identifica o auditado (padrão:
+  `firstname`) e `--nome-consolidado` o nome-base das cópias consolidadas.
+- O `argos status` verifica os manifestos e produtos, mas não os PDFs/ZIPs
+  gerenciados correntes. Preserve os arquivos baixados; não os edite.
 
-```bash
-python <skill-dir>/scripts/survey_tool.py build-all questionario.md saida/questionario
-```
+## 5. Conferir o resultado
 
-O comando `build-all` produz `saida/questionario.lss` e `saida/questionario.docx`. O DOCX usa automaticamente o template interno e prefere pypandoc/Pandoc, como o conversor de Markdown usado nos projetos Argos.
-
-Para forçar ou diagnosticar o mecanismo:
-
-```bash
-python <skill-dir>/scripts/survey_tool.py build-docx questionario.md questionario.docx --engine pandoc
-python <skill-dir>/scripts/survey_tool.py build-docx questionario.md questionario.docx --engine python-docx
-```
-
-Tratar avisos como bloqueantes:
-
-```bash
-python <skill-dir>/scripts/survey_tool.py build questionario.md questionario.lss --strict
-```
-
-Validar um LSS existente:
-
-```bash
-python <skill-dir>/scripts/survey_tool.py validate-lss questionario.lss
-```
-
-Gerar o PDF a partir do DOCX no Linux, executando a partir da raiz do repositório:
-
-```bash
-python3 .agents/skills/elaborar-survey-limesurvey/scripts/docx_to_pdf.py questionario.docx questionario.pdf
-```
-
-No Linux, o script procura `libreoffice` e depois `soffice` no `PATH`. A conversão usa o Writer em modo headless e o filtro `writer_pdf_Export`. Não configure um perfil temporário com `-env:UserInstallation`: algumas distribuições portáteis encerram com o código 81 nessa configuração. Se o ambiente isolar aplicativos desktop, execute o mesmo comando fora do sandbox; não troque o motor de conversão.
-
-Gerar o PDF no Windows, também a partir da raiz do repositório:
-
-```powershell
-py .agents\skills\elaborar-survey-limesurvey\scripts\docx_to_pdf.py questionario.docx questionario.pdf
-```
-
-No Windows, o modo padrão prioriza o Microsoft Word por preservar com maior fidelidade sua própria paginação e seus recursos de layout. Se o Word ou a automação COM não estiverem disponíveis, o script tenta o LibreOffice. Para exigir um motor específico, use `--engine word` ou `--engine libreoffice`.
-
-No fallback, o script procura `soffice.exe` no `PATH` e nas instalações usuais em `Program Files`. Se necessário, informe o executável explicitamente:
-
-```powershell
-py .agents\skills\elaborar-survey-limesurvey\scripts\docx_to_pdf.py questionario.docx questionario.pdf --engine libreoffice --libreoffice "C:\Program Files\LibreOffice\program\soffice.exe"
-```
-
-Em ambos os sistemas, gere primeiro o DOCX definitivo e só então o PDF. O script copia o DOCX para um diretório temporário com nome ASCII, valida o cabeçalho `%PDF-` e substitui a saída somente depois de uma conversão bem-sucedida. Não recorra ao ONLYOFFICE, pois esse motor pode corromper ou substituir fontes TrueType no PDF.
-
-Quando `pdfinfo` e `pdffonts` estiverem disponíveis, confirme o produtor e a incorporação das fontes:
-
-```bash
-pdfinfo questionario.pdf
-pdffonts questionario.pdf
-```
-
-No Linux, o produtor deve identificar o LibreOffice. No Windows, deve identificar o Microsoft Word ou, quando usado o fallback, o LibreOffice. A coluna `emb` das fontes utilizadas deve estar marcada como `yes`.
-
-Quando o front matter declarar mais de um `target`, os comandos `build` e `build-all` geram um conjunto por target, acrescentando o nome ao arquivo de saída.
-
-## Guia DOCX para o respondente
-
-O guia acompanha o link do LimeSurvey, mas não substitui o formulário eletrônico. Gere-o a partir do mesmo Markdown e na mesma execução do LSS para impedir divergências.
-
-O documento apresenta:
-
-- finalidade e orientações gerais;
-- grupos e descrições;
-- perguntas e obrigatoriedade;
-- alternativas, subitens e campos esperados;
-- condições de exibição traduzidas para linguagem humana;
-- formatos e limites dos anexos;
-- aviso de que o preenchimento e o envio ocorrem no LimeSurvey.
-
-O guia omite diretivas técnicas como `mandatory:`, `visible_if:` e `evidence_text:`. Use `--show-logic` somente para uma versão interna de revisão, nunca como padrão do documento enviado aos auditados.
-
-## Critérios de conclusão
-
-Considere a tarefa tecnicamente concluída quando:
-
-- o Markdown é a fonte do conteúdo e permanece legível;
-- a revisão automatizada não apresenta erros;
-- avisos foram corrigidos ou justificados;
-- o LSS foi gerado e validado;
-- o DOCX foi gerado da mesma fonte, abre como pacote válido e não expõe diretivas técnicas;
-- quando solicitado, o PDF foi gerado do DOCX definitivo pelo motor previsto para o sistema, possui cabeçalho válido e mantém as fontes incorporadas;
-- códigos e dependências foram preservados ou a mudança foi explicitada;
-- dados pessoais e uploads passaram por revisão humana;
-- ficou registrado que importação, ativação, tokens, convites, permissões e teste de navegação são etapas da instância do LimeSurvey.
-
-## Entrega
-
-Informe:
-
-- fonte Markdown criada ou alterada;
-- LSS e DOCX gerados;
-- quantidade de grupos e perguntas;
-- erros, avisos e melhorias relevantes;
-- limitações da validação local;
-- pendências para teste e publicação no LimeSurvey.
+Leia o resumo JSON (`--json`) e confirme os produtos publicados, o `sid` e os
+hashes. Em `awaiting_input`, informe qual insumo falta. Mudanças no SurveyMD
+depois de uma coleta ativa exigem decisão explícita do auditor: prefira um novo
+cenário ou uma nova versão do questionário a editar respostas existentes.

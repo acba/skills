@@ -1,0 +1,23 @@
+{
+  "skill_name": "gerir-comunicacoes-tsid",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Preciso enviar o TSID03 com o relatório preliminar e o modelo do questionário em PDF para os 89 municípios respondentes, prazo 02/12/2026. Monte o fluxo seguro de envio sem disparar ainda aos auditados.",
+      "expected_output": "Verifica status da caixa/EWS, valida template com campanha/prazo_limite/criterio_atendimento e 3 anexos PDF, executa `argos comunicacao enviar --dry-run --preview-dir`, oferece visualização HTML e propõe teste com `--teste-para` antes de pedir autorização explícita para `--enviar`.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Já se passaram 3 dias desde o envio do TSID03. Quero saber quem já deu ciência, se houve algum bounce de entrega, e reenviar um lembrete com [LEMBRETE] para quem ainda não se manifestou.",
+      "expected_output": "Executa `argos comunicacao sincronizar`, lista painel com `argos comunicacao pendencias --campanha tsid03` destacando bounces (NDR) e auto-respostas ignoradas, e prepara `argos comunicacao reenviar --campanha tsid03 --sem-ciencia --prefixo \"[LEMBRETE] \" --dry-run` antes de pedir autorização para `--enviar`.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "O prazo do TSID02 venceu ontem. Quero cruzar com as respostas do LimeSurvey, exportar a lista dos inadimplentes para gerar o Termo de Reiteração e emitir o dossiê probatório do Município X com os hashes dos anexos enviados.",
+      "expected_output": "Executa `argos comunicacao registrar --campanha TSID02 --do-survey <csv>`, exporta vencidos com `argos comunicacao pendencias --campanha TSID02 --somente-vencidos --exportar <xlsx>` e gera o dossiê via `argos comunicacao historico --auditado \"Município X\" --exportar <md>`.",
+      "files": []
+    }
+  ]
+}

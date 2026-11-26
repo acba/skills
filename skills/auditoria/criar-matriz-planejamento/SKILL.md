@@ -1,271 +1,200 @@
 ---
 name: criar-matriz-planejamento
-description: Elabora, revisa, melhora, valida e gera matrizes de planejamento de auditoria governamental em Markdown/texto estruturado e DOCX. Use quando o usuário estiver criando ou alterando questões de auditoria, subquestões, riscos, fontes de informação, informações requeridas, critérios, procedimentos, evidências, possíveis achados ou a rastreabilidade entre esses elementos; quando precisar distinguir questões normativas de questões descritivas/levantamentos; ou quando quiser produzir `matriz_planejamento.md` e `matriz_planejamento.docx`. A skill é autocontida: possui parser, validador, gerador DOCX e template próprios. Não use apenas porque o usuário menciona auditoria, achados, recomendações ou normas fora do contexto de uma matriz de planejamento.
+description: Construir, revisar, validar e publicar a Matriz de Planejamento em Markdown, o DOCX/PDF e o mapa de verificação em draft com o Argos CLI, incluindo rastreabilidade F -> IR -> P -> E -> S + C, fontes qualificadas e variantes por público. Use sempre que o usuário pedir para criar, revisar, validar ou converter uma matriz de planejamento, gerar o mapa de verificação ou a árvore de verificação. Para matriz de achados, siga docs/ESPECIFICACAO_MARKDOWN_MATRIZ_ACHADOS.md. Não use para executar procedimentos de auditoria nem para redigir relatórios.
+metadata:
+  requirements: Argos CLI instalado e um projeto com `fiscalizacao.yml`; template DOCX da matriz em `.templates/`; `--config-fontes` quando o mapa precisar de caminhos/chaves físicos; LibreOffice ou Microsoft Word apenas quando o PDF for solicitado.
 ---
 
-# Preencher Matriz de Planejamento
+# Criar a Matriz de Planejamento
 
-## Objetivo
+## Resultado e limites
 
-Criar e manter matrizes de planejamento de auditoria governamental que sejam claras, executáveis, específicas e rastreáveis, sem antecipar conclusões da fase de execução.
+Entregue a matriz em Markdown estruturado, validada com o Argos, e o DOCX
+publicado a partir dela. Quando solicitado, publique também o PDF, o mapa de
+verificação em draft ou a árvore HTML. A matriz declara a estratégia; não
+executa procedimentos nem conclui achados. A matriz de achados tem fluxo
+próprio em `docs/ESPECIFICACAO_MARKDOWN_MATRIZ_ACHADOS.md`.
 
-A matriz deve permitir responder, para cada questão: **o que será avaliado, por que importa, de onde virá a informação, qual informação é necessária, qual padrão será aplicado, qual teste será executado, qual evidência será obtida e qual possível achado poderá resultar**.
+Leia a especificação vigente antes de alterar sintaxe:
+`docs/ESPECIFICACAO_MARKDOWN_MATRIZ_PLANEJAMENTO.md`. Ela é a fonte única para
+gramática, metadados, fontes qualificadas, variantes e geração do mapa.
 
-Use esta skill para auditorias de conformidade, operacionais, financeiras, de governança, de TI, fiscalizações, inspeções, monitoramentos e levantamentos. Preserve convenções locais válidas quando existirem, mas não dependa de scripts, módulos ou templates externos para funcionar.
+## Fontes e recursos obrigatórios
 
-## Recursos autocontidos
+1. Leia `fiscalizacao.yml` (número, título, objetivo, processo e
+   jurisdicionados) e o template em `.templates/`.
+2. Leia a matriz vigente, se existir, e preserve decisões anteriores. Mudanças
+   de escopo exigem registro, não sobrescrita silenciosa.
+3. Leia o SurveyMD e o mapa de verificação existentes quando a matriz precisar
+   manter correspondência com questões, fontes e itens já coletados.
+4. Leia `--config-fontes` quando houver. Os caminhos físicos e as chaves
+   pertencem ao projeto; a matriz guarda apenas o vínculo lógico.
 
-A skill inclui:
+## 1. Estrutura obrigatória do Markdown
 
-- `scripts/matrix_engine.py`: parser e motor OpenXML da matriz;
-- `scripts/validate_matrix.py`: validação estrutural, de rastreabilidade e heurísticas de qualidade;
-- `scripts/build_matrix.py`: valida e gera o DOCX final;
-- `assets/matriz_planejamento_template.docx`: template padrão;
-- `references/`: modelo, critérios de qualidade, exemplos e instruções de geração.
-
-## Fluxo de trabalho
-
-1. Identifique se a tarefa é **criação**, **revisão**, **melhoria**, **validação** ou **geração do DOCX**.
-2. Leia a matriz existente, se houver, antes de alterá-la.
-3. Leia os documentos que definem objetivo, escopo, objeto, questionário, bases de dados, metodologia e critérios citados pelo usuário.
-4. Classifique cada questão como **normativa/avaliativa** ou **descritiva/levantamento**.
-5. Estruture ou revise a cadeia lógica da questão.
-6. Faça revisão em três níveis: estrutural, semântico e metodológico.
-7. Execute `scripts/validate_matrix.py` após mudanças relevantes.
-8. Corrija todos os erros e examine conscientemente os avisos.
-9. Quando solicitado, gere o DOCX com `scripts/build_matrix.py`.
-10. Confirme que o DOCX foi criado e contém todas as questões esperadas.
-
-Ao revisar uma matriz existente, aplique intervenção mínima: preserve conteúdo válido e IDs estáveis; não reescreva por preferência estilística; atualize referências dependentes quando mover, dividir, excluir ou renumerar itens.
-
-## Tipos de questão
-
-### Questão normativa ou avaliativa
-
-Use quando a auditoria pretende avaliar uma condição à luz de um padrão esperado: conformidade, controles, governança, desempenho, economicidade, eficiência, eficácia ou outro requisito verificável.
-
-Uma questão normativa deve conter, no mínimo:
-
-`questão -> subquestões -> riscos -> fontes -> informações requeridas -> critérios -> procedimentos -> evidências -> possíveis achados/situações`
-
-Regras obrigatórias:
-
-- deve possuir critérios de auditoria específicos;
-- deve prever pelo menos um possível achado/situação, como hipótese de auditoria;
-- cada situação deve ser rastreável a risco, procedimento, evidência e critério;
-- o possível achado não é conclusão: somente se confirma após a execução dos procedimentos.
-
-Se uma questão misturar partes puramente descritivas com avaliação normativa e isso prejudicar a clareza, divida-a.
-
-### Questão descritiva ou levantamento
-
-Use quando a finalidade é descrever, mapear, comparar, quantificar, caracterizar, identificar causas, perfis, distribuição, evolução ou maturidade sem concluir desconformidade individual.
-
-Declare:
+Comece com o front matter obrigatório:
 
 ```yaml
-natureza: levantamento
-gera_achado: false
+---
+title: "Nome da fiscalização"
+fiscalizacao: "18/2026"
+jurisdicionados: "Órgãos abrangidos"
+objetivo_auditoria: "Objetivo do trabalho"
+tipo_matriz: planejamento
+---
 ```
 
-Uma questão de levantamento:
+Depois escreva `questao_geral` no preâmbulo e separe cada questão com
+`## Questão NN - Título` (a transversal usa
+`## Questão Transversal - Título`). Em cada questão, declare ao menos:
 
-- não precisa de critérios de auditoria;
-- não precisa de riscos de achado;
-- não deve conter possíveis achados de desconformidade;
-- deve possuir fontes, informações requeridas, procedimentos e evidências/saídas analíticas suficientes;
-- deve preferir `o_que_a_analise_permite_dizer` e `limitacoes_e_cautelas`.
+- `questao`;
+- `subquestoes`, `riscos`, `fontes_de_informacao`, `informacoes_requeridas`,
+  `criterios`, `procedimentos` e `evidencias` como listas identificadas;
+- `possiveis_achados` com situações contendo `descricao`, `severidade`,
+  `referencias_matriz`, `criterios`,
+  `regra_de_identificacao` e `encaminhamento`;
+- `o_que_a_analise_permite_dizer` e `limitacoes_e_cautelas`.
 
-Critérios ou referências metodológicas podem ser usados para cálculo, classificação ou comparabilidade, mas não transformam a questão em normativa por si só.
+A rastreabilidade é `F -> IR -> P -> E -> S + C`: a fonte sustenta a
+informação requerida, o procedimento verifica a informação e a evidência
+sustenta a situação, ancorada em critérios.
 
-## Fontes de informação
+Os IDs de achado e situação são **globais ao documento**, não reiniciam por
+questão. Use `A1`, `A2`, `A3`… e `S1.1`, `S2.1`… sem repetir. Um `A1` na
+questão 1 e outro `A1` na questão 2 passam na validação estrutural, mas o mapa
+falha com “achado duplicado”. Corrija os IDs no Markdown, não no XLSX.
 
-Trate fonte como **origem da informação**, não como o documento produzido.
+### 1.1 Regras e fontes qualificadas
 
-Boas fontes:
+Prefira qualificar a fonte no átomo quando a regra usar dado externo:
 
-- gestores ou responsáveis pelo processo;
-- unidade administrativa, secretaria, órgão ou entidade;
-- sistema corporativo ou aplicação específica;
-- base de dados institucional;
-- processo administrativo ou repositório oficial;
-- portal institucional;
-- fornecedor, operador ou terceiro responsável pela informação.
-
-Evite:
-
-- `F1: Respostas ao questionário.`
-- `F2: Documentos anexados.`
-- `F3: Relatórios.`
-
-Prefira:
-
-- `F1: Gestores responsáveis pelo processo X.`
-- `F2: Unidade responsável pelo controle X.`
-- `F3: Sistema corporativo X.`
-
-O conteúdo necessário pertence a `informacoes_requeridas`; o elemento comprobatório pertence a `evidencias`.
-
-## Informações requeridas
-
-Descreva **o que a equipe precisa saber** para responder às subquestões, sem antecipar o teste.
-
-Toda `IR#` deve apontar pelo menos uma `F#`.
-
-Exemplo:
-
-`IR2: ato de designação vigente, autoridade signatária, data de publicação e período de vigência; [F1, F3]`
-
-## Critérios de auditoria
-
-Leia `references/criteria-and-procedures.md` ao criar ou revisar critérios.
-
-Para questão normativa, não aceite como critério apenas o nome de uma norma, lei, framework, manual, acórdão ou referência técnica.
-
-O critério deve indicar **qual dispositivo será aplicado e qual requisito será testado**, por exemplo:
-
-- lei/decreto/regulamento: artigo, parágrafo, inciso ou alínea;
-- decisão/acórdão/deliberação: item ou subitem;
-- ISO/ABNT: cláusula, controle, requisito ou anexo aplicável;
-- COBIT: objetivo/prática específica, como `APO01.05`;
-- NIST: função/categoria/subcategoria aplicável;
-- manual/metodologia: item, seção ou requisito determinado.
-
-Prefira um critério por obrigação testável. Se dispositivos diferentes estabelecem requisitos distintos, desdobre-os em critérios separados.
-
-Não invente artigo, item, cláusula ou prática. Quando o dispositivo exato não estiver disponível nos arquivos fornecidos, localize a fonte oficial quando permitido. Se não puder confirmar, marque a referência como pendente de validação em vez de fabricar precisão.
-
-## Procedimentos de auditoria
-
-Leia `references/criteria-and-procedures.md` ao elaborar procedimentos.
-
-Procedimentos devem ser específicos e executáveis. Indique, conforme aplicável:
-
-- objeto/documento/registro/população/amostra a examinar;
-- ação: analisar, confrontar, recalcular, entrevistar, inspecionar, confirmar, observar, selecionar amostra etc.;
-- atributos ou condições a verificar;
-- universo, amostra, período ou regra de seleção;
-- informação requerida atendida.
-
-Evite:
-
-- `avaliar a governança`;
-- `verificar a conformidade`;
-- `analisar os documentos`.
-
-Prefira:
-
-`P2: Examinar o ato de aprovação e a versão vigente da política para confirmar autoridade aprovadora, data de vigência, escopo institucional, responsabilidades mínimas e periodicidade de revisão; [IR2]`
-
-Quando a questão for normativa e houver possibilidade de comprovação objetiva, não dependa apenas de resposta declaratória: combine-a com documento, registro de sistema, inspeção, recálculo, confronto ou amostra.
-
-## Evidências
-
-Descreva o elemento observável que poderá confirmar ou refutar a hipótese planejada.
-
-Toda `E#` deve apontar pelo menos um `P#`.
-
-Exemplos:
-
-- ato formal vigente e publicado;
-- registro extraído de sistema;
-- amostra de processos e resultados do teste;
-- logs, contratos, atas, planos, políticas, relatórios ou trilhas de auditoria;
-- resultado de recálculo ou confronto entre bases.
-
-Não confunda evidência com conclusão.
-
-## Possíveis achados e rastreabilidade
-
-Use possíveis achados como **hipóteses de deficiência**. Prefira poucos achados estruturantes com situações objetivas quando várias manifestações derivarem do mesmo problema.
-
-Para cada situação de questão normativa, exija ao menos:
-
-- `R#`: risco relacionado;
-- `P#`: procedimento que testa a condição;
-- `E#`: evidência que resulta do procedimento;
-- `C#`: critério específico aplicável.
-
-A cadeia deve poder ser percorrida nos dois sentidos:
-
-`Situação -> Critério + Evidência -> Procedimento -> Informação requerida -> Fonte`
-
-E também:
-
-`Fonte -> Informação requerida -> Procedimento -> Evidência -> Situação/Achado`
-
-Campos como `severidade`, `regra_de_identificacao`, `tipo_encaminhamento`, `fundamentacao_encaminhamento`, `encaminhamento` e `variantes` são extensões opcionais. Preserve-os quando o projeto os utilizar, mas não os imponha a toda matriz governamental.
-
-## Revisão de qualidade
-
-Leia `references/quality-review.md` para a revisão completa.
-
-Revise em três níveis:
-
-1. **Estrutural** — sintaxe, IDs, campos, duplicidades e referências existentes.
-2. **Semântico** — coerência entre questão, subquestões, riscos, fontes, informações, critérios, procedimentos, evidências e possíveis achados.
-3. **Metodológico** — adequação do tipo de questão, especificidade do critério, executabilidade do procedimento, suficiência da evidência e capacidade da matriz de responder ao objetivo.
-
-A validação automatizada não substitui a revisão semântica do auditor.
-
-## Formato-fonte
-
-O formato canônico é Markdown/texto estruturado e pode usar extensão `.txt` ou `.md`.
-
-Leia `references/matrix-model.md` antes de criar uma matriz do zero.
-
-Quando não houver nome definido, use `matriz_planejamento.md`.
-
-## Validação automatizada
-
-Execute:
-
-```bash
-python scripts/validate_matrix.py matriz_planejamento.md
+```markdown
+      regra_de_identificacao:
+        - (questionario:q0101 == Não) |
+          (avaliacao_evidencias:avaliacao_documental[q0101] == Não conforme)
 ```
 
-Use `--json` para saída estruturada e `--strict` quando quiser tratar qualquer aviso como bloqueante.
+`fonte:campo` é opcional. Sem prefixo, o vínculo usa `fields` do
+`--config-fontes`. Com prefixo, a fonte é registrada automaticamente no mapa.
+O config ainda precisa informar `filepath` e `key` para a execução; sem isso o
+draft registra pendência e não pode ser aprovado.
 
-Erros são bloqueantes. Avisos exigem revisão consciente.
+Não coloque caminhos na matriz. Não use prefixo vazio/inválido nem valor com
+operador lógico dentro de aspas (por exemplo, `"A | B"`); a geração falha.
+`campo in [A, B]` é aceito e vira uma ação agrupada.
 
-O validador verifica, entre outros pontos:
+### 1.2 Variantes
 
-- referências inexistentes;
-- `IR` sem `F`, `P` sem `IR`, `E` sem `P`;
-- questão normativa sem critério ou sem possível achado;
-- situação sem `R/P/E/C`;
-- questão de levantamento com achado;
-- critérios genéricos ou ISO/COBIT sem item específico;
-- fontes descritas como produto informacional;
-- procedimentos genéricos;
-- elementos órfãos na cadeia de rastreabilidade.
+Use `variantes` quando o encaminhamento ou os critérios mudarem por público:
 
-## Geração do DOCX
-
-Leia `references/docx-generation.md` quando o usuário pedir o documento final.
-
-Fluxo padrão:
-
-```bash
-python scripts/build_matrix.py matriz_planejamento.md
+```yaml
+      variantes:
+        - publico: Empresas estatais
+          aplica_se:
+            naturezas: [EMPRESA_ESTATAL]
+          criterios: [C1, C11]
+          tipo_encaminhamento: Recomendação
+          encaminhamento: Formalizar o processo.
 ```
 
-Por padrão, o script:
+A variante geral é derivada da situação base quando não houver uma `publico:
+Geral` explícita. Variantes específicas substituem apenas os atributos que
+declaram. Não repita a situação inteira dentro da variante.
 
-1. usa o parser da própria skill;
-2. valida a matriz;
-3. usa o template interno `assets/matriz_planejamento_template.docx`;
-4. lê do front matter `fiscalizacao`, `jurisdicionados` e `objetivo_auditoria`;
-5. gera `matriz_planejamento.docx` ao lado da matriz.
+## 2. Validar antes de publicar
 
-Não depende de `gerar_matriz_planejamento.py`, `build_matrix.py`, template ou módulo do repositório do usuário.
+```text
+argos matriz validar 01-Planejamento/.../matriz_planejamento.md
+argos matriz validar 01-Planejamento/.../matriz_planejamento.md --strict
+```
 
-## Saída ao concluir
+`matriz validar` não gera produtos. `--strict` transforma avisos em bloqueio.
+Corrija o Markdown; nunca edite o DOCX gerado. Use `--json` quando precisar
+conferir contagens, erros, avisos e hashes.
 
-Informe de forma concisa:
+Com `--project-root`, caminhos relativos são resolvidos a partir da raiz do
+projeto. Para salvar em uma pasta externa, informe caminho absoluto; não presuma
+que o diretório atual do terminal será usado.
 
-- o que foi criado ou alterado;
-- inconsistências corrigidas;
-- pontos que ainda dependem de decisão ou fonte do auditor;
-- resultado da validação;
-- caminho de `matriz_planejamento.md` e do DOCX, quando gerados.
+## 3. Publicar DOCX/PDF
+
+```text
+argos matriz publicar caminho/matriz_planejamento.md --output caminho/matriz_planejamento.docx
+argos matriz publicar caminho/matriz_planejamento.md --config-layout layout-matriz.yml
+argos matriz publicar caminho/matriz_planejamento.md --pdf
+```
+
+- O template vem do projeto; confirme que ele corresponde ao tipo de matriz.
+- O PDF é derivado do DOCX publicado (`--pdf-output` opcional) e exige
+  LibreOffice ou Microsoft Word.
+- A apresentação compacta IDs no DOCX sem alterar os IDs canônicos do Markdown.
+- `--config-layout` controla apenas espaçamento visual dos critérios, em twips.
+  Sem configuração, usa-se o padrão do template.
+- Quando houver `larguras_colunas_percentuais`, use as seis chaves do tipo e
+  soma exata de 100; sem essa configuração, não invente larguras.
+
+## 4. Gerar e revisar o mapa de verificação
+
+```text
+argos matriz mapa caminho/matriz_planejamento.md --output mapa-verificacao.xlsx
+argos matriz mapa caminho/matriz_planejamento.md --config-fontes fontes.yml --output mapa-verificacao.xlsx
+```
+
+O config mínimo, quando a matriz já usa prefixos, é:
+
+```yaml
+sources:
+  - id: questionario
+    filepath: respostas.xlsx
+    key: firstname
+  - id: avaliacao_evidencias
+    filepath: painel-avaliacao-evidencias.xlsx
+    key: Auditado
+```
+
+O draft é uma minuta e não executa a auditoria. Se o comando falhar com
+`achado duplicado` ou `situação duplicada`, o problema está nos IDs globais
+do Markdown. Confira:
+
+- `Critérios de Auditoria` — critérios da matriz e metadados declarados;
+- `Variantes de Encaminhamento` — específicas e `.GERAL` derivadas da base;
+- `Motivos do Relatório` — minutas `[MINUTA]`, sujeitas a revisão editorial;
+- `Fontes de Informação` — fontes referenciadas; caminho/chave ausentes deixam
+  pendência;
+- `Revisão` e `Pendências` — aprovação humana e itens a resolver.
+
+O gerador agrupa alternativas do mesmo campo, resolve variáveis derivadas e
+mantém o achado como **OU** das situações. Não crie ações manualmente nem
+edite a planilha para contornar uma regra; corrija a matriz.
+
+Quando o mapa estiver correto, o caminho é:
+
+```text
+revisar pendências → aprovar Revisão → executar argos auditar
+```
+
+`VerificationMap.compile` recusa fonte sem `filepath` ou `key`; resolva o
+config antes de aprovar o mapa.
+
+## 5. Árvore de verificação
+
+```text
+argos matriz arvore --mapa mapa-verificacao.xlsx --questionario questionario.md --output arvore.html
+```
+
+Gere a árvore apenas depois de o mapa estar revisado. Ela é visualização do
+mapa, não substitui a aprovação nem a execução.
+
+## 6. Conferir o resultado
+
+Leia o resumo JSON (`--json`) e confirme:
+
+- `validation.errors` e `validation.warnings`;
+- produtos publicados e hashes SHA-256;
+- `output` do mapa e contagens de fontes/pendências;
+- estado `awaiting_input`, informando qual insumo falta — não invente conteúdo
+  para destravar a execução.
+
+Regenere os produtos a partir do Markdown; nunca edite DOCX, XLSX, PDF ou o
+mapa manualmente.

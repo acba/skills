@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: encaminhamento-adequado-sem-falso-alerta
+expected_outcome: |
+  O parecer conclui APTO PARA ASSINATURA, reconhece implicitamente que a ausência de prazo na obrigação de não fazer, a verificação em fiscalizações futuras e a recomendação com regime de não adesão estão conformes, e não cria apontamentos.
