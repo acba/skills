@@ -20,9 +20,12 @@ precisa, em JSON:
 - `argos <objeto> <ação> --help --json`: o contrato de uma operação (`parameters[].flags`, `required`, `choices`, `default`, `positional`, `path`).
 
 Evite `argos --list-operations --json`: traz o catálogo inteiro e ocupa muito contexto.
-`argos doctor --json` diagnostica Python, extras, binários e variáveis de ambiente
-sem exibir segredos. `argos init DESTINO --numero NNN/AAAA --nome "..." --objetivo "..."`
-cria o projeto e não faz parte do catálogo.
+`argos doctor --json` diagnostica Python, extras, binários, variáveis de ambiente
+(sem exibir segredos) e a saúde do workspace (`fiscalizacao.yml`, schema do
+`controle.sqlite` somente leitura e integridade de `congelados.yml`, saindo com
+código 1 se houver erro). `argos init DESTINO --numero NNN/AAAA --nome "..." --objetivo "..."`
+cria o projeto e não faz parte do catálogo. Bancos `controle.sqlite` de schema
+antigo (sem tabelas de comunicação) são recusados e exigem workspace novo.
 
 ## Leia o resultado pelo envelope e pelo código de saída
 
